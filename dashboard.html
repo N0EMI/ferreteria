@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Ventas - Ferretería El Rayo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #e67e22;
+            --light: #ecf0f1;
+            --success: #27ae60;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; background: #f4f7f6; height: 100vh; overflow: hidden; }
+
+        /* Sidebar Responsivo */
+        .sidebar { width: 250px; background: var(--primary); color: white; display: flex; flex-direction: column; transition: 0.3s; }
+        .sidebar h2 { padding: 20px; text-align: center; border-bottom: 1px solid var(--secondary); margin: 0; font-size: 1.2rem; }
+        .sidebar nav { flex: 1; padding: 20px 0; }
+        .sidebar nav a { display: block; padding: 15px 25px; color: #bdc3c7; text-decoration: none; transition: 0.3s; }
+        .sidebar nav a:hover { background: var(--secondary); color: white; border-left: 4px solid var(--accent); }
+
+        /* Contenedor Principal */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .container { padding: 25px; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+        /* Tarjetas */
+        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .grid-cliente { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; width: 100%; box-sizing: border-box; }
+
+        /* Buscador de Productos */
+        .search-box { position: relative; margin-top: 10px; }
+        #res-busqueda { 
+            position: absolute; width: 100%; background: white; border: 1px solid #ddd; 
+            z-index: 1000; max-height: 250px; overflow-y: auto; display: none; border-radius: 0 0 5px 5px;
+        }
+        .res-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .res-item:hover { background: #f8f9fa; color: var(--accent); }
+
+        /* Tabla de Ventas */
+        .table-responsive { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+
+        .total-section { text-align: right; margin-top: 20px; font-size: 1.5rem; color: var(--primary); }
+        .btn-vender { background: var(--success); color: white; border: none; padding: 15px 30px; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: bold; width: 100%; margin-top: 10px; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 0; position: absolute; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <h2>🛠 EL RAYO</h2>
+        <nav>
+            <a href="#"><i class="fas fa-shopping-cart"></i> Nueva Venta</a>
+            <a href="reporte.php"><i class="fas fa-file-invoice"></i> Historial Boletas</a>
+            <a href="#"><i class="fas fa-boxes"></i> Inventario</a>
+            <a href="index.html"><i class="fas fa-sign-out-alt"></i> Salir</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <span>Bienvenido: <strong id="user-name">Vendedor</strong></span>
+            <span id="fecha-actual"></span>
+        </header>
+
+        <div class="container">
+            <div class="card">
+                <h3><i class="fas fa-user"></i> Datos del Cliente</h3>
+                <div class="grid-cliente">
+                    <input type="text" id="cli-dni" placeholder="DNI o RUC">
+                    <input type="text" id="cli-nombre" placeholder="Nombre / Razón Social">
+                    <input type="text" id="cli-dir" placeholder="Dirección (Tacna)">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-search"></i> Buscar Producto</h3>
+                <div class="search-box">
+                    <input type="text" id="input-busqueda" placeholder="Escriba nombre o código del producto..." onkeyup="buscarProducto(this.value)">
+                    <div id="res-busqueda"></div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th width="80">Cant.</th>
+                                <th>P. Base</th>
+                                <th width="100">% Adic.</th>
+                                <th>Subtotal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="carrito-body">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="total-section">
+                    <strong>Total: S/ <span id="total-monto">0.00</span></strong>
+                </div>
+                <button class="btn-vender" onclick="finalizarVenta()">
+                    <i class="fas fa-check-circle"></i> GENERAR VENTA
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Cargar nombre de usuario
+        document.getElementById('user-name').innerText = sessionStorage.getItem('usuario_nombre') || 'Usuario';
+        document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
+
+        let carrito = [];
+
+        async function buscarProducto(query) {
+            const resBox = document.getElementById('res-busqueda');
+            if (query.length < 2) { resBox.style.display = 'none'; return; }
+
+            try {
+                const response = await fetch(`api/buscar_productos.php?q=${query}`);
+                const productos = await response.json();
+                
+                resBox.innerHTML = productos.map(p => `
+                    <div class="res-item" onclick='agregarAlCarrito(${JSON.stringify(p)})'>
+                        <span>${p.nombre}</span>
+                        <strong>S/ ${p.precio_base} | Stock: ${p.stock}</strong>
+                    </div>
+                `).join('');
+                resBox.style.display = 'block';
+            } catch (e) { console.error("Error al buscar"); }
+        }
+
+        function agregarAlCarrito(p) {
+            const existe = carrito.find(item => item.id === p.id);
+            if(existe) {
+                existe.cantidad++;
+            } else {
+                carrito.push({...p, cantidad: 1, porcentaje: 0});
+            }
+            document.getElementById('res-busqueda').style.display = 'none';
+            document.getElementById('input-busqueda').value = '';
+            renderCarrito();
+        }
+
+        function renderCarrito() {
+            const tbody = document.getElementById('carrito-body');
+            let totalGeneral = 0;
+            tbody.innerHTML = '';
+
+            carrito.forEach((item, index) => {
+                const precioFinal = item.precio_base * (1 + (item.porcentaje / 100));
+                const subtotal = precioFinal * item.cantidad;
+                totalGeneral += subtotal;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.nombre}</td>
+                        <td><input type="number" value="${item.cantidad}" onchange="updateItem(${index}, 'cantidad', this.value)"></td>
+                        <td>S/ ${item.precio_base}</td>
+                        <td><input type="number" value="${item.porcentaje}" onchange="updateItem(${index}, 'porcentaje', this.value)"> %</td>
+                        <td>S/ ${subtotal.toFixed(2)}</td>
+                        <td><button onclick="removeItem(${index})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('total-monto').innerText = totalGeneral.toFixed(2);
+        }
+
+        function updateItem(index, campo, valor) {
+            carrito[index][campo] = parseFloat(valor);
+            renderCarrito();
+        }
+
+        function removeItem(index) {
+            carrito.splice(index, 1);
+            renderCarrito();
+        }
+
+        async function finalizarVenta() {
+            // 1. Validaciones
+            if (carrito.length === 0) return alert("El carrito está vacío");
+            
+            const cliNombre = document.getElementById('cli-nombre').value;
+            const cliDni = document.getElementById('cli-dni').value;
+
+            if (!cliNombre || !cliDni) {
+                alert("Por favor, ingrese los datos del cliente antes de generar la venta.");
+                return;
+            }
+
+            // 2. Preparar los datos
+            const ventaData = {
+                cliente: {
+                    dni: cliDni,
+                    nombre: cliNombre,
+                    direccion: document.getElementById('cli-dir').value || 'Tacna'
+                },
+                carrito: carrito, // <-- AQUÍ SE PASAN LOS PRODUCTOS SELECCIONADOS
+                totalFinal: parseFloat(document.getElementById('total-monto').innerText),
+                metodoPago: 'efectivo',
+                fecha: new Date().toLocaleString()
+            };
+
+            try {
+                // 3. Guardar en la Base de Datos
+                const resp = await fetch('api/guardar_venta.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ventaData)
+                });
+                
+                const result = await resp.json();
+
+                if(result.success) {
+                    // 4. Agregar el número de boleta que generó el servidor
+                    ventaData.numeroBoleta = result.boleta;
+
+                    // 5. ENVIAR A LA MEMORIA (LocalStorage) PARA LA BOLETA
+                    localStorage.setItem('ultimaVenta', JSON.stringify(ventaData));
+
+                    // 6. ABRIR LA BOLETA EN VENTANA EMERGENTE INMEDIATAMENTE
+                    const ancho = 450;
+                    const alto = 700;
+                    const x = (window.screen.width / 2) - (ancho / 2);
+                    const y = (window.screen.height / 2) - (alto / 2);
+                    
+                    window.open('imprimir_boleta.html', 'BoletaRayo', 
+                        `width=${ancho},height=${alto},left=${x},top=${y},scrollbars=yes`);
+
+                    // 7. Limpiar y refrescar el sistema
+                    alert("Venta procesada con éxito");
+                    location.reload(); 
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("No se pudo conectar con el servidor.");
+            }
+        }
+    </script>
+    <script src="js/ventas.js"></script>
+</body>
+</html>

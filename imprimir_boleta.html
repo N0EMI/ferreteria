@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Boleta de Venta - El Rayo</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace; }
+        body { margin: 0; padding: 10px; background: #eee; }
+        .ticket { background: white; width: 80mm; margin: auto; padding: 15px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+        .header h2 { margin: 5px 0; font-size: 16px; }
+        .header p { margin: 2px 0; font-size: 11px; }
+        
+        .info { margin: 10px 0; font-size: 12px; }
+        .info b { display: inline-block; width: 70px; }
+
+        table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 10px; }
+        th { border-bottom: 1px solid #000; text-align: left; padding-bottom: 5px; }
+        td { padding: 5px 0; vertical-align: top; }
+        .text-right { text-align: right; }
+
+        .totales { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; font-size: 13px; }
+        .totales div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .total-final { font-size: 16px; font-weight: bold; border-top: 1px solid #000; padding-top: 5px; margin-top: 5px; }
+
+        .footer { text-align: center; font-size: 10px; margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px; }
+
+        @media print {
+            body { background: none; padding: 0; }
+            .ticket { width: 100%; box-shadow: none; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="text-align: center; margin-bottom: 10px; padding: 10px; background: #d1ecf1; border-radius: 5px;">
+        <p style="margin-bottom: 10px; font-size: 14px;"><b>¿Qué desea hacer con la boleta?</b></p>
+        
+        <button onclick="window.print()" style="padding: 10px 15px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold;">
+            🖨️ IMPRIMIR / GUARDAR PDF
+        </button>
+        
+        <button onclick="window.close()" style="padding: 10px 15px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 4px; font-weight: bold;">
+            ❌ CERRAR
+        </button>
+    </div>
+
+    <div class="ticket">
+        <div class="header">
+            <h2>🛠 FERRETERÍA EL RAYO 🛠</h2>
+            <p>RUC: 1045781236</p>
+            <p>AV. CORONEL MENDOZA N° 105 - TACNA</p>
+            <p>TEL: 955 123 456</p>
+            <p style="margin-top: 10px; font-weight: bold;">NOTA DE VENTA</p>
+        </div>
+
+        <div class="info" id="info-cliente">
+            </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">DESC.</th>
+                    <th class="text-right">CANT.</th>
+                    <th class="text-right">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody id="detalle-items">
+                </tbody>
+        </table>
+
+        <div class="totales" id="seccion-totales">
+            </div>
+
+        <div class="footer">
+            <p>Representación impresa de boleta de venta.<br>Gracias por su preferencia.</p>
+            <p><b>Tacna - Perú</b></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rawData = localStorage.getItem('ultimaVenta');
+            if (!rawData) {
+                alert("No hay datos de venta para mostrar");
+                return;
+            }
+
+            const data = JSON.parse(rawData);
+            console.log("Datos recibidos:", data); // Esto te ayudará a ver errores en la consola (F12)
+
+            // 1. Mostrar Información del Cliente
+            document.getElementById('info-cliente').innerHTML = `
+                <div><b>Fecha:</b> ${data.fecha || new Date().toLocaleString()}</div>
+                <div><b>Nota:</b> ${data.numeroBoleta || 'S/N'}</div>
+                <div><b>Cliente:</b> ${data.cliente.nombre}</div>
+                <div><b>DNI/RUC:</b> ${data.cliente.dni}</div>
+                <div><b>Dir.:</b> ${data.cliente.direccion || 'Tacna'}</div>
+            `;
+
+            // 2. Mostrar Productos (Validando nombres de propiedades)
+            // 2. Mostrar Productos
+            const body = document.getElementById('detalle-items');
+            body.innerHTML = ""; 
+
+            if (data.carrito && data.carrito.length > 0) {
+                data.carrito.forEach(item => {
+                    // Buscamos el precio: puede venir como precio_final o precio_base
+                    let totalF;
+                    if (item.precio_final) {
+                        totalF = item.precio_final * item.cantidad;
+                    } else {
+                        totalF = (item.precio_base * (1 + (item.porcentaje / 100))) * item.cantidad;
+                    }
+
+                    body.innerHTML += `
+                        <tr>
+                            <td>${item.nombre}</td>
+                            <td class="text-right">${item.cantidad}</td>
+                            <td class="text-right">S/ ${totalF.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                body.innerHTML = "<tr><td colspan='3' style='text-align:center'>No hay productos registrados</td></tr>";
+            }
+
+            // 3. Totales
+            const total = parseFloat(data.totalFinal || 0);
+            const igv = total * 0.18;
+            const sub = total - igv;
+
+            document.getElementById('seccion-totales').innerHTML = `
+                <div><span>OP. GRAVADA:</span> <span>S/ ${sub.toFixed(2)}</span></div>
+                <div><span>IGV (18%):</span> <span>S/ ${igv.toFixed(2)}</span></div>
+                <div class="total-final"><span>TOTAL:</span> <span>S/ ${total.toFixed(2)}</span></div>
+            `;
+        });
+    </script>
+</body>
+</html>

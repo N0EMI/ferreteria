@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Ferretería El Rayo</title>
+    <style>
+        /* Variables de color para un diseño moderno */
+        :root {
+            --primary: #2c3e50;
+            --accent: #e67e22;
+            --white: #ffffff;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Contenedor principal del Login */
+        .login-container {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo-area h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+
+        .logo-area p {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* Estilos del formulario */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dcdde1;
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Botón responsivo */
+        .btn-ingresar {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-ingresar:hover {
+            background: #34495e;
+        }
+
+        #error-msg {
+            color: #e74c3c;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* Adaptación para pantallas pequeñas */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="logo-area">
+        <h1>🛠 Ferretería El Rayo</h1>
+        <p>Sistema de Ventas - Tacna</p>
+    </div>
+
+    <form id="login-form">
+        <div class="input-group">
+            <label for="correo">Correo Electrónico</label>
+            <input type="email" id="correo" placeholder="ejemplo@correo.com" required>
+        </div>
+
+        <div class="input-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn-ingresar">INICIAR SESIÓN</button>
+    </form>
+
+    <div id="error-msg">Credenciales incorrectas. Intente de nuevo.</div>
+</div>
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const correo = document.getElementById('correo').value;
+        const password = document.getElementById('password').value;
+        const errorMsg = document.getElementById('error-msg');
+
+        try {
+            // Llamada al puente PHP local
+            const response = await fetch('api/login.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ correo, password })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Guardar datos del usuario en la sesión del navegador
+                sessionStorage.setItem('usuario_id', result.usuario.id);
+                sessionStorage.setItem('usuario_nombre', result.usuario.nombre);
+                sessionStorage.setItem('usuario_rol', result.usuario.rol);
+                
+                // Redirigir al Dashboard
+                window.location.href = 'dashboard.html';
+            } else {
+                errorMsg.innerText = result.message;
+                errorMsg.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error de conexión:', error);
+            alert('Error crítico: No se pudo conectar con la base de datos local.');
+        }
+    });
+</script>
+<script src="js/login.js"></script>
+</body>
+</html>
